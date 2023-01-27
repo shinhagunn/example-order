@@ -47,22 +47,23 @@ func HandleTrade(book *models.Book, orders []models.Order, bookType models.BookT
 	exist, index := book.FindIndex(orders, order.Price)
 	if exist {
 		isFinded = true
+		book.Lock()
 		if orders[index].Amount < order.Amount {
 			trade <- &models.Trade{
 				CreatedAt: time.Now().UTC(),
 				Price:     orders[index].Price,
 				Amount:    orders[index].Amount,
 			}
-			book.DeleteOrder(opsType, index)
 			book.AddOrder(bookType, order.Price, order.Amount-orders[index].Amount)
-		} else if orders[index].Amount == order.Amount {
 			book.DeleteOrder(opsType, index)
+		} else if orders[index].Amount == order.Amount {
 			trade <- &models.Trade{
 				CreatedAt: time.Now().UTC(),
 				Price:     orders[index].Price,
 				Amount:    orders[index].Amount,
 			}
-		} else {
+			book.DeleteOrder(opsType, index)
+		} else if orders[index].Amount > order.Amount {
 			orders[index].Amount -= order.Amount
 			trade <- &models.Trade{
 				CreatedAt: time.Now().UTC(),
@@ -70,6 +71,8 @@ func HandleTrade(book *models.Book, orders []models.Order, bookType models.BookT
 				Amount:    order.Amount,
 			}
 		}
+
+		book.Unlock()
 	}
 
 	if !isFinded {

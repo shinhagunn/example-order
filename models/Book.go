@@ -1,6 +1,10 @@
 package models
 
-import "github.com/shopspring/decimal"
+import (
+	"sync"
+
+	"github.com/shopspring/decimal"
+)
 
 type BookType string
 
@@ -10,6 +14,7 @@ var (
 )
 
 type Book struct {
+	sync.Mutex
 	Ask []Order
 	Bid []Order
 }
